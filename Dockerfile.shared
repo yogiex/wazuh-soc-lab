@@ -2,28 +2,27 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Apache, Wazuh agent, dan tools
 RUN apt-get update && apt-get install -y \
-    apache2 \
-    curl \
-    gnupg \
-    lsb-release \
+    apache2 curl gnupg lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
-# Aktifkan modul Apache yang umum dipakai
 RUN a2enmod rewrite ssl headers
 
-# Buat struktur shared hosting
-RUN mkdir -p /home/domain1.ac.id/public_html /home/domain1.ac.id/logs \
-    && mkdir -p /home/domain2.ac.id/public_html /home/domain2.ac.id/logs \
-    && echo "<h1>Domain 1</h1>" > /home/domain1.ac.id/public_html/index.html \
-    && echo "<h1>Domain 2</h1>" > /home/domain2.ac.id/public_html/index.html
+# Buat direktori untuk 5 domain terpisah
+RUN for i in 1 2 3 4 5; do \
+      mkdir -p /home/domain${i}.ac.id/public_html \
+               /home/domain${i}.ac.id/logs; \
+    done
 
-# Konfigurasi virtual host
+RUN echo "<h1>Domain 1 – Personal Blog</h1>" > /home/domain1.ac.id/public_html/index.html \
+ && echo "<h1>Domain 2 – Company Profile</h1>" > /home/domain2.ac.id/public_html/index.html \
+ && echo "<h1>Domain 3 – E-Commerce</h1>" > /home/domain3.ac.id/public_html/index.html \
+ && echo "<h1>Domain 4 – Forum Diskusi</h1>" > /home/domain4.ac.id/public_html/index.html \
+ && echo "<h1>Domain 5 – Portal Berita</h1>" > /home/domain5.ac.id/public_html/index.html
+
 COPY shared-hosting.conf /etc/apache2/sites-available/shared-hosting.conf
 RUN a2dissite 000-default.conf && a2ensite shared-hosting.conf
 
-# Pasang Wazuh agent
 ARG WAZUH_MANAGER="wazuh-manager"
 RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
     && echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list \
@@ -31,10 +30,8 @@ RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
     && sed -i "s/^MANAGER_IP=.*/MANAGER_IP=${WAZUH_MANAGER}/" /etc/ossec-init.conf \
     && sed -i "s/^address:.*/address: ${WAZUH_MANAGER}/" /var/ossec/etc/ossec.conf
 
-# Konfigurasi agent untuk membaca log Apache
-COPY wazuh-agent-ossec.conf /var/ossec/etc/ossec.conf
+COPY wazuh-agent-shared.conf /var/ossec/etc/ossec.conf
 
-# Expose port 80
 EXPOSE 80
 
 COPY entrypoint.sh /entrypoint.sh
