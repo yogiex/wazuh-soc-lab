@@ -49,14 +49,13 @@ services:
       - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/etc/ssl/root-ca.pem:ro
       - ./config/wazuh_indexer_ssl_certs/wazuh-manager.pem:/etc/ssl/filebeat.pem:ro
       - ./config/wazuh_indexer_ssl_certs/wazuh-manager-key.pem:/etc/ssl/filebeat.key:ro
-      # Mount custom manager configuration
       - ./config/wazuh_manager/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
       - ./config/wazuh_manager/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
       - ./config/wazuh_manager/local_decoder.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml:ro
     ports:
-      - "1514:1514/udp"          # syslog receiver
-      - "1515:1515"              # agent registration
-      - "55000:55000"            # Wazuh API
+      - "1514:1514/udp"
+      - "1515:1515"
+      - "55000:55000"
     networks:
       - wazuh-net
 
@@ -110,7 +109,7 @@ services:
     networks:
       - wazuh-net
 
-  # --- Container simulasi shared hosting ---
+  # Shared hosting konvensional
   shared-hosting:
     build:
       context: .
@@ -122,7 +121,23 @@ services:
     networks:
       - wazuh-net
     ports:
-      - "8080:80"   # akses website simulasi di http://localhost:8080
+      - "7070:80"
+    depends_on:
+      - wazuh-manager
+
+  # Multi-site lab universitas
+  multi-site:
+    build:
+      context: .
+      dockerfile: Dockerfile.multi-site
+      args:
+        - WAZUH_MANAGER=wazuh-manager
+    container_name: multi-site
+    hostname: multi-site
+    networks:
+      - wazuh-net
+    ports:
+      - "7071:80"
     depends_on:
       - wazuh-manager
 
