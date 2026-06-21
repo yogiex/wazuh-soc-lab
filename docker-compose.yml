@@ -20,7 +20,7 @@ services:
         hard: 65536
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - ./config/wazuh_indexer_ssl_certs:/usr/share/wazuh-indexer/config/certs:ro
+      - ./config/wazuh_indexer_ssl_certs:/etc/wazuh-indexer/certs:ro
     ports:
       - "9200:9200"
     networks:
@@ -101,9 +101,9 @@ services:
       - "SERVER_SSL_CERTIFICATE=/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem"
       - "SERVER_SSL_KEY=/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem"
     volumes:
-      - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:ro
-      - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:ro
-      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/dashboard.pem:/etc/wazuh-dashboard/certs/dashboard.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/dashboard-key.pem:/etc/wazuh-dashboard/certs/dashboard-key.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/etc/wazuh-dashboard/certs/root-ca.pem:ro
     ports:
       - "443:5601"
     networks:
