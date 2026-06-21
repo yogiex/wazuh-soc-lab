@@ -49,8 +49,6 @@ graph TB
     Dashboard -->|API calls| Manager
 ```
 
-````
-
 **Aliran data:**
 
 1. **Sangfor NGAF** dan **WAF** mengirim log mentah ke Wazuh Manager melalui **syslog UDP** (port 1514).
@@ -242,4 +240,7 @@ Proyek ini dilisensikan di bawah [MIT License](LICENSE) — bebas digunakan, dim
 
 **Selamat belajar!**
 Jika ada pertanyaan, silakan buka [Issues](https://github.com/yogiex/wazuh-soc-lab/issues) atau kontak penulis.
-````
+
+```
+
+```
