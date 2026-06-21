@@ -2,38 +2,53 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install Apache, PHP, MariaDB, Wazuh agent, dan tool pendukung
 RUN apt-get update && apt-get install -y \
-    apache2 curl gnupg lsb-release \
+    apache2 \
+    mariadb-server \
+    php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-zip \
+    curl gnupg lsb-release wget unzip \
     && rm -rf /var/lib/apt/lists/*
 
+# Aktifkan modul Apache
 RUN a2enmod rewrite ssl headers
 
-# Buat direktori untuk 5 domain terpisah
+# Buat struktur shared hosting untuk 5 domain
 RUN for i in 1 2 3 4 5; do \
       mkdir -p /home/domain${i}.ac.id/public_html \
                /home/domain${i}.ac.id/logs; \
     done
 
-RUN echo "<h1>Domain 1 – Personal Blog</h1>" > /home/domain1.ac.id/public_html/index.html \
- && echo "<h1>Domain 2 – Company Profile</h1>" > /home/domain2.ac.id/public_html/index.html \
- && echo "<h1>Domain 3 – E-Commerce</h1>" > /home/domain3.ac.id/public_html/index.html \
- && echo "<h1>Domain 4 – Forum Diskusi</h1>" > /home/domain4.ac.id/public_html/index.html \
- && echo "<h1>Domain 5 – Portal Berita</h1>" > /home/domain5.ac.id/public_html/index.html
+# Download WordPress untuk setiap domain
+RUN for i in 1 2 3 4 5; do \
+      cd /home/domain${i}.ac.id/public_html && \
+      wget -q https://wordpress.org/latest.tar.gz && \
+      tar xf latest.tar.gz --strip-components=1 && \
+      rm latest.tar.gz; \
+    done
 
+# Buat wp-config.php untuk setiap domain (akan dikustomisasi saat startup)
+RUN for i in 1 2 3 4 5; do \
+      cp /home/domain${i}.ac.id/public_html/wp-config-sample.php \
+         /home/domain${i}.ac.id/public_html/wp-config.php; \
+    done
+
+# Salin konfigurasi virtual host
 COPY shared-hosting.conf /etc/apache2/sites-available/shared-hosting.conf
 RUN a2dissite 000-default.conf && a2ensite shared-hosting.conf
 
+# Pasang Wazuh agent
 ARG WAZUH_MANAGER="wazuh-manager"
 RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
     && echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list \
-    && apt-get update && apt-get install -y wazuh-agent \
-    && sed -i "s/^MANAGER_IP=.*/MANAGER_IP=${WAZUH_MANAGER}/" /etc/ossec-init.conf \
-    && sed -i "s/^address:.*/address: ${WAZUH_MANAGER}/" /var/ossec/etc/ossec.conf
+    && apt-get update && apt-get install -y wazuh-agent
 
+# Konfigurasi Wazuh agent (instruksi terpisah)
 COPY wazuh-agent-shared.conf /var/ossec/etc/ossec.conf
 
 EXPOSE 80
 
-COPY entrypoint.sh /entrypoint.sh
+# Copy entrypoint baru yang akan menginisialisasi database WordPress
+COPY entrypoint-wordpress.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
