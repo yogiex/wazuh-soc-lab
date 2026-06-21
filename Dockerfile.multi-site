@@ -26,12 +26,11 @@ RUN echo "<h1>labs.ac.id – Portal Utama</h1>" > /home/labs.ac.id/public_html/i
 COPY multi-site.conf /etc/apache2/sites-available/multi-site.conf
 RUN a2dissite 000-default.conf && a2ensite multi-site.conf
 
+# Pasang Wazuh agent (tanpa modifikasi ossec-init.conf)
 ARG WAZUH_MANAGER="wazuh-manager"
 RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
     && echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list \
-    && apt-get update && apt-get install -y wazuh-agent \
-    && sed -i "s/^MANAGER_IP=.*/MANAGER_IP=${WAZUH_MANAGER}/" /etc/ossec-init.conf \
-    && sed -i "s/^address:.*/address: ${WAZUH_MANAGER}/" /var/ossec/etc/ossec.conf
+    && apt-get update && apt-get install -y wazuh-agent
 
 COPY wazuh-agent-multisite.conf /var/ossec/etc/ossec.conf
 
