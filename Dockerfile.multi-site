@@ -1,0 +1,42 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    apache2 curl gnupg lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN a2enmod rewrite ssl headers
+
+# Buat struktur multi-site labs.ac.id
+RUN mkdir -p /home/labs.ac.id/public_html /home/labs.ac.id/logs \
+    && mkdir -p /home/labs.ac.id/public_html/prosman \
+    && mkdir -p /home/labs.ac.id/public_html/keamanan \
+    && mkdir -p /home/labs.ac.id/public_html/jaringan \
+    && mkdir -p /home/labs.ac.id/public_html/web \
+    && mkdir -p /home/labs.ac.id/public_html/data
+
+RUN echo "<h1>labs.ac.id – Portal Utama</h1>" > /home/labs.ac.id/public_html/index.html \
+    && echo "<h1>prosman.labs.ac.id – Lab Proses Manufaktur</h1>" > /home/labs.ac.id/public_html/prosman/index.html \
+    && echo "<h1>keamanan.labs.ac.id – Lab Keamanan Siber</h1>" > /home/labs.ac.id/public_html/keamanan/index.html \
+    && echo "<h1>jaringan.labs.ac.id – Lab Jaringan Komputer</h1>" > /home/labs.ac.id/public_html/jaringan/index.html \
+    && echo "<h1>web.labs.ac.id – Lab Pemrograman Web</h1>" > /home/labs.ac.id/public_html/web/index.html \
+    && echo "<h1>data.labs.ac.id – Lab Data Science</h1>" > /home/labs.ac.id/public_html/data/index.html
+
+COPY multi-site.conf /etc/apache2/sites-available/multi-site.conf
+RUN a2dissite 000-default.conf && a2ensite multi-site.conf
+
+ARG WAZUH_MANAGER="wazuh-manager"
+RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
+    && echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list \
+    && apt-get update && apt-get install -y wazuh-agent \
+    && sed -i "s/^MANAGER_IP=.*/MANAGER_IP=${WAZUH_MANAGER}/" /etc/ossec-init.conf \
+    && sed -i "s/^address:.*/address: ${WAZUH_MANAGER}/" /var/ossec/etc/ossec.conf
+
+COPY wazuh-agent-multisite.conf /var/ossec/etc/ossec.conf
+
+EXPOSE 80
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
