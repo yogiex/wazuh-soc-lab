@@ -1,0 +1,42 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Apache, Wazuh agent, dan tools
+RUN apt-get update && apt-get install -y \
+    apache2 \
+    curl \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# Aktifkan modul Apache yang umum dipakai
+RUN a2enmod rewrite ssl headers
+
+# Buat struktur shared hosting
+RUN mkdir -p /home/domain1.ac.id/public_html /home/domain1.ac.id/logs \
+    && mkdir -p /home/domain2.ac.id/public_html /home/domain2.ac.id/logs \
+    && echo "<h1>Domain 1</h1>" > /home/domain1.ac.id/public_html/index.html \
+    && echo "<h1>Domain 2</h1>" > /home/domain2.ac.id/public_html/index.html
+
+# Konfigurasi virtual host
+COPY shared-hosting.conf /etc/apache2/sites-available/shared-hosting.conf
+RUN a2dissite 000-default.conf && a2ensite shared-hosting.conf
+
+# Pasang Wazuh agent
+ARG WAZUH_MANAGER="wazuh-manager"
+RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
+    && echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list \
+    && apt-get update && apt-get install -y wazuh-agent \
+    && sed -i "s/^MANAGER_IP=.*/MANAGER_IP=${WAZUH_MANAGER}/" /etc/ossec-init.conf \
+    && sed -i "s/^address:.*/address: ${WAZUH_MANAGER}/" /var/ossec/etc/ossec.conf
+
+# Konfigurasi agent untuk membaca log Apache
+COPY wazuh-agent-ossec.conf /var/ossec/etc/ossec.conf
+
+# Expose port 80
+EXPOSE 80
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

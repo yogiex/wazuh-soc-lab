@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    hostname: wazuh-indexer
+    container_name: wazuh-indexer
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "bootstrap.memory_lock=true"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=false"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStr0ngP@ssw0rd!"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ./config/wazuh_indexer_ssl_certs:/usr/share/wazuh-indexer/config/certs:ro
+    ports:
+      - "9200:9200"
+    networks:
+      - wazuh-net
+
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.9.0
+    hostname: wazuh-manager
+    container_name: wazuh-manager
+    depends_on:
+      - wazuh-indexer
+    environment:
+      - "INDEXER_URL=https://wazuh-indexer:9200"
+      - "INDEXER_USERNAME=admin"
+      - "INDEXER_PASSWORD=MyStr0ngP@ssw0rd!"
+      - "API_USERNAME=wazuh"
+      - "API_PASSWORD=wazuh"
+      - "FILEBEAT_SSL_VERIFICATION_MODE=full"
+      - "SSL_CERTIFICATE_AUTHORITIES=/etc/ssl/root-ca.pem"
+      - "SSL_CERTIFICATE=/etc/ssl/filebeat.pem"
+      - "SSL_KEY=/etc/ssl/filebeat.key"
+    volumes:
+      - wazuh-manager-data:/var/ossec/data
+      - wazuh-manager-logs:/var/ossec/logs
+      - wazuh-manager-config:/wazuh-config-mount
+      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/etc/ssl/root-ca.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/wazuh-manager.pem:/etc/ssl/filebeat.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/wazuh-manager-key.pem:/etc/ssl/filebeat.key:ro
+      # Mount custom manager configuration
+      - ./config/wazuh_manager/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ./config/wazuh_manager/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
+      - ./config/wazuh_manager/local_decoder.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml:ro
+    ports:
+      - "1514:1514/udp"          # syslog receiver
+      - "1515:1515"              # agent registration
+      - "55000:55000"            # Wazuh API
+    networks:
+      - wazuh-net
+
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.9.0
+    hostname: wazuh-dashboard
+    container_name: wazuh-dashboard
+    depends_on:
+      - wazuh-indexer
+    environment:
+      - "INDEXER_URL=https://wazuh-indexer:9200"
+      - "INDEXER_USERNAME=admin"
+      - "INDEXER_PASSWORD=MyStr0ngP@ssw0rd!"
+      - "WAZUH_API_URL=https://wazuh-manager:55000"
+      - "API_USERNAME=wazuh"
+      - "API_PASSWORD=wazuh"
+      - "DASHBOARD_USERNAME=kibanaserver"
+      - "DASHBOARD_PASSWORD=kibanaserver"
+      - "PATTERN=wazuh-alerts-*"
+      - "CHECKS_PATTERN=true"
+      - "CHECKS_TEMPLATE=true"
+      - "CHECKS_API=true"
+      - "CHECKS_SETUP=true"
+      - "EXTENSIONS_PCI=true"
+      - "EXTENSIONS_GDPR=true"
+      - "EXTENSIONS_HIPAA=true"
+      - "EXTENSIONS_NIST=true"
+      - "EXTENSIONS_TSC=true"
+      - "EXTENSIONS_AUDIT=true"
+      - "EXTENSIONS_OSCAP=true"
+      - "EXTENSIONS_CISCAT=true"
+      - "EXTENSIONS_AWS=true"
+      - "EXTENSIONS_GCP=true"
+      - "EXTENSIONS_AZURE=true"
+      - "EXTENSIONS_VIRUSTOTAL=true"
+      - "EXTENSIONS_OSQUERY=true"
+      - "EXTENSIONS_DOCKER=true"
+      - "APP_LOGOUT_TIME=3600000"
+      - "DISABLE_TELEMETRY=true"
+      - "SERVER_BASEPATH=/"
+      - "SERVER_PORT=5601"
+      - "SERVER_SSL_ENABLED=true"
+      - "SERVER_SSL_CERTIFICATE=/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem"
+      - "SERVER_SSL_KEY=/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem"
+    volumes:
+      - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:ro
+      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
+    ports:
+      - "443:5601"
+    networks:
+      - wazuh-net
+
+  # --- Container simulasi shared hosting ---
+  shared-hosting:
+    build:
+      context: .
+      dockerfile: Dockerfile.shared
+      args:
+        - WAZUH_MANAGER=wazuh-manager
+    container_name: shared-hosting
+    hostname: shared-hosting
+    networks:
+      - wazuh-net
+    ports:
+      - "8080:80"   # akses website simulasi di http://localhost:8080
+    depends_on:
+      - wazuh-manager
+
+volumes:
+  wazuh-indexer-data:
+  wazuh-manager-data:
+  wazuh-manager-logs:
+  wazuh-manager-config:
+
+networks:
+  wazuh-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24

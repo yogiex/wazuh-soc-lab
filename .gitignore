@@ -1,0 +1,8 @@
+# Sertifikat SSL (jangan commit private key)
+config/wazuh_indexer_ssl_certs/
+
+# File sistem
+.DS_Store
+Thumbs.db
+*.swp
+*~
