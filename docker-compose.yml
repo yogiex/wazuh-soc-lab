@@ -14,8 +14,8 @@ services:
         soft: -1
         hard: -1
       nofile:
-        soft: 65536
-        hard: 65536
+        soft: 655360
+        hard: 655360
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
       - ./config/wazuh_indexer_ssl_certs:/usr/share/wazuh-indexer/config/certs:ro
@@ -119,6 +119,10 @@ services:
         - WAZUH_MANAGER=wazuh-manager
     container_name: shared-hosting
     hostname: shared-hosting
+    environment:
+      - "WAZUH_MANAGER=wazuh-manager"
+      - "WAZUH_API_USER=wazuh"
+      - "WAZUH_API_PASS=MyS3cur3P@ss!"
     networks:
       - wazuh-net
     ports:
@@ -135,6 +139,10 @@ services:
         - WAZUH_MANAGER=wazuh-manager
     container_name: multi-site
     hostname: multi-site
+    environment:
+      - "WAZUH_MANAGER=wazuh-manager"
+      - "WAZUH_API_USER=wazuh"
+      - "WAZUH_API_PASS=MyS3cur3P@ss!"
     networks:
       - wazuh-net
     ports:

@@ -43,8 +43,10 @@ RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - \
     && echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list \
     && apt-get update && apt-get install -y wazuh-agent
 
-# Konfigurasi Wazuh agent (instruksi terpisah)
+# Konfigurasi Wazuh agent + auto-registration script
 COPY wazuh-agent-shared.conf /var/ossec/etc/ossec.conf
+COPY register-agent.sh /register-agent.sh
+RUN chmod +x /register-agent.sh
 
 EXPOSE 80
 

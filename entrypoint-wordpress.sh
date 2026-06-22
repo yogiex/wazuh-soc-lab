@@ -25,7 +25,8 @@ for i in 1 2 3 4 5; do
     sed -i "s|password_here|${DB_PASS}|" /home/domain${i}.ac.id/public_html/wp-config.php
 done
 
-# Jalankan Wazuh agent
+# Daftarkan Wazuh agent jika belum terdaftar, lalu jalankan
+/register-agent.sh
 /var/ossec/bin/wazuh-control start
 
 # Jalankan Apache di foreground
