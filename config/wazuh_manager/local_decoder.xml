@@ -1,3 +1,11 @@
-<decoder name="local-decoder-placeholder">
-  <prematch>^Wazuh local decoder</prematch>
+<decoder name="sangfor-ngaf">
+  <prematch>SangforNGAF</prematch>
+  <regex>devid=(\S+) src=(\S+) dst=(\S+) action=(\S+) policy="([^"]+)" type=(\S+) severity=(\S+)</regex>
+  <order>devid, srcip, dstip, ngaf_action, policy, type, severity</order>
+</decoder>
+
+<decoder name="waf">
+  <prematch>^WAF-\S+ src=</prematch>
+  <regex>^WAF-\S+ src=(\S+) dst=(\S+) rule=(\S+) method=(\S+) uri=(\S+) status=(\d+)</regex>
+  <order>srcip, dstip, rule, method, uri, waf_status</order>
 </decoder>

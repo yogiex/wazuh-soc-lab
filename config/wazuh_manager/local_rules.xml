@@ -1,6 +1,79 @@
-<group name="local,syslog,">
-  <rule id="100001" level="0">
-    <decoded_as>local-decoder-placeholder</decoded_as>
-    <description>Local decoder placeholder rule</description>
+<group name="sangfor,ngaf,waf,firewall,">
+
+  <!-- ============================================ -->
+  <!-- Sangfor NGAF Rules                           -->
+  <!-- ============================================ -->
+
+  <rule id="100002" level="10">
+    <decoded_as>sangfor-ngaf</decoded_as>
+    <field name="ngaf_action">blocked</field>
+    <description>Sangfor NGAF: Blocked traffic from $(srcip) to $(dstip) — $(policy)</description>
+    <group>attack,blocked,</group>
   </rule>
+
+  <rule id="100003" level="12">
+    <decoded_as>sangfor-ngaf</decoded_as>
+    <field name="severity">high</field>
+    <description>Sangfor NGAF: High severity alert — $(type) from $(srcip) to $(dstip)</description>
+    <group>attack,high_severity,</group>
+  </rule>
+
+  <rule id="100004" level="8">
+    <decoded_as>sangfor-ngaf</decoded_as>
+    <field name="severity">medium</field>
+    <description>Sangfor NGAF: Medium severity — $(type) from $(srcip)</description>
+    <group>attack,medium_severity,</group>
+  </rule>
+
+  <rule id="100005" level="5">
+    <decoded_as>sangfor-ngaf</decoded_as>
+    <description>Sangfor NGAF: $(ngaf_action) — $(type) from $(srcip) to $(dstip)</description>
+    <group>recon,</group>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- WAF Rules                                    -->
+  <!-- ============================================ -->
+
+  <rule id="100010" level="12">
+    <decoded_as>waf</decoded_as>
+    <field name="rule">SQLi</field>
+    <description>WAF: SQL Injection blocked from $(srcip) — $(uri)</description>
+    <group>attack,sqli,</group>
+  </rule>
+
+  <rule id="100011" level="12">
+    <decoded_as>waf</decoded_as>
+    <field name="rule">XSS</field>
+    <description>WAF: Cross-Site Scripting blocked from $(srcip) — $(uri)</description>
+    <group>attack,xss,</group>
+  </rule>
+
+  <rule id="100012" level="10">
+    <decoded_as>waf</decoded_as>
+    <field name="waf_status">403</field>
+    <description>WAF: Request blocked (HTTP 403) from $(srcip) — rule: $(rule)</description>
+    <group>attack,blocked,</group>
+  </rule>
+
+  <rule id="100013" level="8">
+    <decoded_as>waf</decoded_as>
+    <field name="rule">LFI</field>
+    <description>WAF: Local File Inclusion attempt from $(srcip) — $(uri)</description>
+    <group>attack,lfi,</group>
+  </rule>
+
+  <rule id="100014" level="8">
+    <decoded_as>waf</decoded_as>
+    <field name="rule">RCE</field>
+    <description>WAF: Remote Code Execution attempt from $(srcip) — $(uri)</description>
+    <group>attack,rce,</group>
+  </rule>
+
+  <rule id="100015" level="5">
+    <decoded_as>waf</decoded_as>
+    <description>WAF: $(rule) detected from $(srcip) — $(method) $(uri) returned $(waf_status)</description>
+    <group>recon,</group>
+  </rule>
+
 </group>
