@@ -17,6 +17,7 @@ Simulasi pengumpulan log dari **Sangfor NGAF**, **Web Application Firewall (WAF)
 - [Persyaratan](#-persyaratan)
 - [Cara Menjalankan](#-cara-menjalankan)
 - [Konfigurasi & Kustomisasi](#-konfigurasi--kustomisasi)
+- [Log Injector](#-log-injector)
 - [Mengirim Log Uji](#-mengirim-log-uji)
 - [Belajar Membaca Log](#-belajar-membaca-log)
 - [Lisensi](#-lisensi)
@@ -32,6 +33,7 @@ graph TB
         WAF["🛡️ WAF<br/>Syslog UDP 1514"]
         Shared["🌐 Shared Hosting<br/>5 domain terpisah<br/>Agent: wazuh-agent-shared"]
         Multi["🏫 Multi-site Lab<br/>labs.ac.id + 5 subdomain<br/>Agent: wazuh-agent-multisite"]
+    Injector["🤖 Log Injector<br/>8 attack scenarios<br/>30s cycle"]
     end
 
     subgraph Wazuh Stack
@@ -40,6 +42,9 @@ graph TB
         Dashboard["Wazuh Dashboard<br/>(Kibana-based)"]
     end
 
+    Injector -->|File inject via docker| Shared
+    Injector -->|File inject via docker| Multi
+    Injector -->|Syslog UDP| Manager
     Sangfor -->|Log via syslog| Manager
     WAF -->|Log via syslog| Manager
     Shared -->|Log via agent| Manager
@@ -51,13 +56,16 @@ graph TB
 
 **Aliran data:**
 
-1. **Sangfor NGAF** dan **WAF** mengirim log mentah ke Wazuh Manager melalui **syslog UDP** (port 1514).
-2. **Container shared hosting** menjalankan Apache + Wazuh Agent (terkoneksi via **TCP 1514**). Agent membaca log dari lima domain terpisah (`domain1.ac.id` … `domain5.ac.id`).
-3. **Container multi‑site lab** mensimulasikan portal `labs.ac.id` dengan lima subdomain (prosman, keamanan, jaringan, web, data). Agent membaca satu access log gabungan (virtual host membedakan lewat `vhost`).
-4. Manager menganalisis log menggunakan **decoder** dan **rule** (termasuk custom decoder untuk Sangfor/WAF), menghasilkan alert.
-5. Alert disimpan di **Wazuh Indexer** (OpenSearch).
-6. **Wazuh Dashboard** menampilkan visualisasi dan pencarian interaktif (port **5601**).
-7. **Agent auto-registration:** Agent container mendaftar otomatis ke manager via REST API pada startup — tanpa perlu `docker exec` manual.
+1. **Log Injector** — container Alpine yang menjalankan orchestrator shell script. Setiap 30 detik inject log NORMAL, jeda, inject log ATTACK, jeda, ulang.
+2. **Injector** menginjeksi file log ke container shared-hosting & multi-site via mounted `/var/run/docker.sock` + `docker exec`.
+3. **Sangfor NGAF** dan **WAF** — injector mengirim log mentah ke Wazuh Manager via **syslog UDP** (port 1514) menggunakan `nc -u`.
+4. **FIM (File Integrity Monitoring)** — injector membuat/memodifikasi file di agent container untuk trigger syscheck.
+5. **Container shared hosting** menjalankan Apache + Wazuh Agent (terkoneksi via **TCP 1514**). Agent membaca log dari lima domain terpisah (`domain1.ac.id` … `domain5.ac.id`).
+6. **Container multi‑site lab** mensimulasikan portal `labs.ac.id` dengan lima subdomain (prosman, keamanan, jaringan, web, data). Agent membaca satu access log gabungan (virtual host membedakan lewat `vhost`).
+7. Manager menganalisis log menggunakan **decoder** dan **rule** (termasuk custom decoder untuk Sangfor/WAF), menghasilkan alert.
+8. Alert disimpan di **Wazuh Indexer** (OpenSearch).
+9. **Wazuh Dashboard** menampilkan visualisasi dan pencarian interaktif (port **5601**).
+10. **Agent auto-registration:** Agent container mendaftar otomatis ke manager via REST API pada startup — tanpa perlu `docker exec` manual.
 
 ---
 
@@ -75,16 +83,34 @@ graph TB
 │   │   └── ossec.conf                 # Konfigurasi Manager (syslog receiver)
 │   └── wazuh_dashboard/               # Konfigurasi OpenSearch Dashboards
 │       └── opensearch_dashboards.yml
+├── docs/                              # Studi SOC-200 & dokumentasi
+│   └── STRUKTUR-FOLDER.md
+├── scripts/
+│   ├── orchestrator.sh                # Main entrypoint injector
+│   ├── orchestrator.conf              # Timing, scenarios, intensity
+│   ├── inject-common.sh               # Library functions inject
+│   └── scenarios/
+│       ├── web-recon.sh               # Directory busting + path traversal
+│       ├── web-sqli.sh                # SQL injection payloads
+│       ├── web-xss.sh                 # Reflected XSS payloads
+│       ├── web-bruteforce.sh          # wp-login brute force
+│       ├── ssh-brute.sh               # SSH brute + post-exploit sudo
+│       ├── sangfor-logs.sh            # Sangfor NGAF syslog UDP
+│       ├── waf-logs.sh                # WAF syslog UDP
+│       └── fim-webshell.sh            # Webshell file create + FIM trigger
 ├── docker-compose.yml                 # Orkestrasi semua service
+├── Dockerfile.injector                # Image injector (Alpine + docker-cli)
 ├── Dockerfile.shared                  # Image shared hosting (5 domain)
 ├── Dockerfile.multi-site              # Image multi‑site (labs.ac.id)
 ├── entrypoint.sh                      # Startup script multi-site
 ├── entrypoint-wordpress.sh            # Startup script shared hosting (auto DB + WP)
 ├── register-agent.sh                  # Auto‑register agent via Wazuh API
+├── setup.sh                           # Setup awal environment
 ├── shared-hosting.conf                # VirtualHost Apache untuk shared hosting
 ├── multi-site.conf                    # VirtualHost Apache untuk multi‑site
 ├── wazuh-agent-shared.conf            # Konfigurasi agent untuk shared hosting
 ├── wazuh-agent-multisite.conf         # Konfigurasi agent untuk multi‑site
+├── wazuh-agent-ossec.conf             # Konfigurasi agent alternatif
 └── README.md
 ```
 
@@ -228,6 +254,55 @@ Container agent (`shared-hosting`, `multi-site`) otomatis mendaftar ke manager v
    ```bash
    docker-compose up -d --build multi-site
    ```
+
+---
+
+## 🤖 Log Injector
+
+Container **injector** otomatis menghasilkan log uji secara periodik — tanpa perlu menulis command manual.
+
+### Arsitektur
+
+| Komponen | Fungsi |
+|----------|--------|
+| `orchestrator.sh` | Main loop: NORMAL → sleep 30s → ATTACK → sleep 30s → repeat |
+| `orchestrator.conf` | Konfigurasi timing, scenario enabled, intensity |
+| `inject-common.sh` | Library: `inject_apache`, `inject_auth`, `inject_syslog`, `inject_file` |
+| `scenarios/*.sh` | 8 scenario scripts untuk berbagai tipe serangan |
+
+### Metode Injection
+
+| Metode | Target | Mekanisme |
+|--------|--------|-----------|
+| **File append** | Apache log & auth.log agent | `docker exec <agent> sh -c "echo ... >> file"` |
+| **Syslog UDP** | Wazuh Manager port 1514 | `nc -u <manager> 1514` |
+| **File create/mod** | FIM trigger di agent | `docker exec <agent> touch/echo` |
+
+### Konfigurasi
+
+Edit `scripts/orchestrator.conf`:
+
+```bash
+BASELINE_INTERVAL=30      # Durasi fase NORMAL (detik)
+ATTACK_INTERVAL=30        # Durasi fase ATTACK (detik)
+CYCLE_MODE="sequential"   # sequential / random
+INTENSITY="medium"        # low / medium / high
+ENABLED_SCENARIOS="web-recon web-sqli ..."  # Daftar scenario aktif
+NORMAL_INJECT="yes"       # Inject traffic normal juga
+```
+
+### Scenario Overview
+
+| Scenario | Tipe Log | Tujuan |
+|----------|----------|--------|
+| `web-recon` | Apache access | Directory busting, path traversal |
+| `web-sqli` | Apache access | SQL injection pattern |
+| `web-xss` | Apache access | Reflected XSS |
+| `web-bruteforce` | Apache access | wp-login brute force |
+| `ssh-brute` | auth.log | SSH brute + sudo post-exploit |
+| `sangfor-logs` | Syslog UDP | Sangfor NGAF security log |
+| `waf-logs` | Syslog UDP | WAF block log |
+| `fim-webshell` | File create | Webshell FIM detection |
 
 ---
 
