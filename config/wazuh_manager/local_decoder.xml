@@ -1,2 +1,3 @@
-<decoders>
-</decoders>
+<decoder name="local-decoder-placeholder">
+  <prematch>^Wazuh local decoder</prematch>
+</decoder>

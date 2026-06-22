@@ -20,9 +20,9 @@ for i in 1 2 3 4 5; do
     mysql -u root -e "FLUSH PRIVILEGES;"
     
     # Update wp-config.php
-    sed -i "s/database_name_here/${DB_NAME}/" /home/domain${i}.ac.id/public_html/wp-config.php
-    sed -i "s/username_here/${DB_USER}/" /home/domain${i}.ac.id/public_html/wp-config.php
-    sed -i "s/password_here/${DB_PASS}/" /home/domain${i}.ac.id/public_html/wp-config.php
+    sed -i "s|database_name_here|${DB_NAME}|" /home/domain${i}.ac.id/public_html/wp-config.php
+    sed -i "s|username_here|${DB_USER}|" /home/domain${i}.ac.id/public_html/wp-config.php
+    sed -i "s|password_here|${DB_PASS}|" /home/domain${i}.ac.id/public_html/wp-config.php
 done
 
 # Jalankan Wazuh agent

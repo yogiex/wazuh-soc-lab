@@ -20,7 +20,8 @@ services:
         hard: 65536
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - ./config/wazuh_indexer_ssl_certs:/etc/wazuh-indexer/certs:ro
+      - ./config/wazuh_indexer_ssl_certs:/usr/share/wazuh-indexer/config/certs:ro
+      - ./config/wazuh_indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
     ports:
       - "9200:9200"
     networks:
@@ -37,8 +38,8 @@ services:
       - "INDEXER_USERNAME=admin"
       - "INDEXER_PASSWORD=MyStr0ngP@ssw0rd!"
       - "API_USERNAME=wazuh"
-      - "API_PASSWORD=wazuh"
-      - "FILEBEAT_SSL_VERIFICATION_MODE=full"
+      - "API_PASSWORD=MyS3cur3P@ss!" 
+      - "FILEBEAT_SSL_VERIFICATION_MODE=certificate"
       - "SSL_CERTIFICATE_AUTHORITIES=/etc/ssl/root-ca.pem"
       - "SSL_CERTIFICATE=/etc/ssl/filebeat.pem"
       - "SSL_KEY=/etc/ssl/filebeat.key"
@@ -69,9 +70,9 @@ services:
       - "INDEXER_URL=https://wazuh-indexer:9200"
       - "INDEXER_USERNAME=admin"
       - "INDEXER_PASSWORD=MyStr0ngP@ssw0rd!"
-      - "WAZUH_API_URL=https://wazuh-manager:55000"
+      - "WAZUH_API_URL=https://wazuh-manager"
       - "API_USERNAME=wazuh"
-      - "API_PASSWORD=wazuh"
+      - "API_PASSWORD=MyS3cur3P@ss!" 
       - "DASHBOARD_USERNAME=kibanaserver"
       - "DASHBOARD_PASSWORD=kibanaserver"
       - "PATTERN=wazuh-alerts-*"
@@ -95,17 +96,19 @@ services:
       - "EXTENSIONS_DOCKER=true"
       - "APP_LOGOUT_TIME=3600000"
       - "DISABLE_TELEMETRY=true"
+      - "NODE_TLS_REJECT_UNAUTHORIZED=0"
       - "SERVER_BASEPATH=/"
       - "SERVER_PORT=5601"
       - "SERVER_SSL_ENABLED=true"
-      - "SERVER_SSL_CERTIFICATE=/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem"
-      - "SERVER_SSL_KEY=/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem"
+      - "SERVER_SSL_CERTIFICATE=/etc/wazuh-dashboard/certs/dashboard.pem"
+      - "SERVER_SSL_KEY=/etc/wazuh-dashboard/certs/dashboard-key.pem"
     volumes:
       - ./config/wazuh_indexer_ssl_certs/dashboard.pem:/etc/wazuh-dashboard/certs/dashboard.pem:ro
       - ./config/wazuh_indexer_ssl_certs/dashboard-key.pem:/etc/wazuh-dashboard/certs/dashboard-key.pem:ro
       - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/etc/wazuh-dashboard/certs/root-ca.pem:ro
+      - ./config/wazuh_dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
     ports:
-      - "443:5601"
+      - "443:443"
     networks:
       - wazuh-net
 
