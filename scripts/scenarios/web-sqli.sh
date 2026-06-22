@@ -39,10 +39,17 @@ for ((i=0; i<COUNT; i++)); do
     inject_apache_access "$AGENTS_SHARED" "$dom" "$ATTACKER_IP" "GET" "$payload" "$code" "sqlmap/1.8 (http://sqlmap.org)"
 done
 
+# Multi-site
+MS_SQLI=("/prosman/?id=1'+OR+'1'%3D'1" "/keamanan/?id=1'+UNION+SELECT+1,2,3--" "/jaringan/?page=1'+AND+1%3D1--" "/web/?id=1'+ORDER+BY+10--")
+for ((i=0; i<COUNT/4; i++)); do
+    uri="${MS_SQLI[$((RANDOM % ${#MS_SQLI[@]}))]}"
+    inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "GET" "$uri" "200" "sqlmap/1.8 (http://sqlmap.org)"
+done
+
 # Error log entries
 for ((i=0; i<5; i++)); do
     dom="${DOMAINS[$((RANDOM % ${#DOMAINS[@]}))]}"
     inject_apache_error "$AGENTS_SHARED" "$dom" "error" "$ATTACKER_IP" "WordPress database error You have an error in your SQL syntax for query SELECT * FROM wp_posts WHERE ID ="
 done
 
-log_orch "scenario=web-sqli lines=${COUNT} attacker=${ATTACKER_IP}"
+log_orch "scenario=web-sqli lines=$((COUNT + COUNT/4)) attacker=${ATTACKER_IP}"

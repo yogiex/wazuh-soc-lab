@@ -40,4 +40,16 @@ for ((i=0; i<3; i++)); do
     inject_apache_error "$AGENTS_SHARED" "$dom" "error" "$ATTACKER_IP" "Invalid URI in request, declining"
 done
 
-log_orch "scenario=web-recon lines=${COUNT} attacker=${ATTACKER_IP}"
+# Multi-site
+MS_PATHS=("/admin" "/backup" "/prosman/" "/keamanan/" "/jaringan/" "/.git/config" "/.env" "/../../etc/passwd")
+for ((i=0; i<COUNT/3; i++)); do
+    uri="${MS_PATHS[$((RANDOM % ${#MS_PATHS[@]}))]}"
+    if [[ "$uri" == *"passwd"* || "$uri" == *".git"* || "$uri" == *".env"* ]]; then
+        code="400"
+    else
+        code="404"
+    fi
+    inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "GET" "$uri" "$code" "Mozilla/5.0 (compatible; Nmap Scripting Engine; https://nmap.org)"
+done
+
+log_orch "scenario=web-recon lines=$((COUNT + COUNT/3)) attacker=${ATTACKER_IP}"

@@ -20,4 +20,12 @@ inject_apache_access "$AGENTS_SHARED" "$DOMAIN" "$ATTACKER_IP" "POST" "/wp-login
 inject_apache_access "$AGENTS_SHARED" "$DOMAIN" "$ATTACKER_IP" "GET" "/wp-admin/" "200"
 inject_apache_error "$AGENTS_SHARED" "$DOMAIN" "info" "$ATTACKER_IP" "Authentication successful for admin from ${ATTACKER_IP}"
 
+# Multi-site brute
+for ((i=0; i<COUNT/3; i++)); do
+    inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "POST" "/wp-login" "401" "Mozilla/5.0"
+done
+for ((i=0; i<3; i++)); do
+    inject_apache_access "$AGENTS_MULTI" "labs.ac.id" "$ATTACKER_IP" "GET" "/wp-admin" "401" "Mozilla/5.0"
+done
+
 log_orch "scenario=web-bruteforce lines=${COUNT} attacker=${ATTACKER_IP}"
