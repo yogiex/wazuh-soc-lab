@@ -1,0 +1,5 @@
+FROM alpine:3.20
+RUN apk add --no-cache bash docker-cli netcat-openbsd coreutils
+COPY scripts/ /scripts/
+RUN chmod +x /scripts/orchestrator.sh /scripts/inject-common.sh /scripts/scenarios/*.sh
+ENTRYPOINT ["/scripts/orchestrator.sh"]

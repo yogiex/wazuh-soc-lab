@@ -150,6 +150,23 @@ services:
     depends_on:
       - wazuh-manager
 
+  # Log injector untuk SOC-200 study (auto-generate dummy logs)
+  injector:
+    build:
+      context: .
+      dockerfile: Dockerfile.injector
+    container_name: injector
+    hostname: injector
+    networks:
+      - wazuh-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - wazuh-manager
+      - shared-hosting
+      - multi-site
+    restart: unless-stopped
+
 volumes:
   wazuh-indexer-data:
   wazuh-manager-data:
