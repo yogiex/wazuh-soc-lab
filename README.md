@@ -20,6 +20,7 @@ Simulasi pengumpulan log dari **Sangfor NGAF**, **Web Application Firewall (WAF)
 - [Log Injector](#-log-injector)
 - [Mengirim Log Uji](#-mengirim-log-uji)
 - [Belajar Membaca Log](#-belajar-membaca-log)
+- [Troubleshooting](#-troubleshooting)
 - [Lisensi](#-lisensi)
 
 ---
@@ -78,11 +79,13 @@ graph TB
 │   │   └── opensearch.yml
 │   ├── wazuh_indexer_ssl_certs/       # Sertifikat SSL (hasil generate)
 │   ├── wazuh_manager/
-│   │   ├── local_decoder.xml          # Custom decoder Sangfor/WAF
-│   │   ├── local_rules.xml            # Custom rule alerts
-│   │   └── ossec.conf                 # Konfigurasi Manager (syslog receiver)
-│   └── wazuh_dashboard/               # Konfigurasi OpenSearch Dashboards
-│       └── opensearch_dashboards.yml
+│   │   ├── local_decoder.xml               # Custom decoder Sangfor/WAF
+│   │   ├── local_rules.xml                 # Custom rule alerts
+│   │   ├── local_internal_options.conf      # analysisd.syscollector_threads=1
+│   │   └── ossec.conf                      # Konfigurasi Manager (syslog receiver + indexer)
+│   └── wazuh_dashboard/                    # Konfigurasi OpenSearch Dashboards
+│       ├── opensearch_dashboards.yml
+│       └── wazuh.yml                       # API connection (run_as: false)
 ├── docs/                              # Studi SOC-200 & dokumentasi
 │   └── STRUKTUR-FOLDER.md
 ├── scripts/
@@ -169,6 +172,9 @@ Tunggu beberapa menit hingga semua container **healthy** (`docker-compose ps`).
 
 - **Wazuh Dashboard**: [https://localhost:5601](https://localhost:5601)
   Username: `kibanaserver` / Password: `kibanaserver`
+  > Jika dashboard menampilkan **"No agents were added to the manager"** meski agent sudah terdaftar,
+  > pastikan `run_as: false` di `config/wazuh_dashboard/wazuh.yml`, lalu clear browser cookies
+  > dan reload halaman. Lihat [Troubleshooting](#-troubleshooting).
 
 - **Shared Hosting** (5 domain terpisah):
   Akses via `curl` dengan header `Host`:
@@ -338,6 +344,36 @@ Log ini akan muncul di Dashboard setelah beberapa detik.
 4. Buat visualisasi: grafik serangan per domain, top attacker IP, traffic per subdomain, dll.
 
 Contoh decoder Sangfor NGAF & WAF sudah tersedia di `local_decoder.xml`, bisa langsung digunakan.
+
+## 🔧 Troubleshooting
+
+### Dashboard menampilkan "No agents were added to the manager"
+
+**Penyebab:** Token API yang disimpan di browser memiliki `run_as: true` dengan `rbac_roles: []` (tanpa izin).
+
+**Solusi:**
+
+1. Edit `config/wazuh_dashboard/wazuh.yml`, pastikan `run_as: false`.
+2. Copy file ke container:
+   ```bash
+   docker-compose cp config/wazuh_dashboard/wazuh.yml wazuh-dashboard:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
+   ```
+3. Restart dashboard:
+   ```bash
+   docker-compose restart wazuh-dashboard
+   ```
+4. Clear browser cookies untuk domain `localhost:5601`, reload halaman.
+
+### Syscollector / Inventory data tidak muncul di Dashboard
+
+**Penyebab:** Dua hal yang perlu dicek:
+- Manager `ossec.conf` harus punya blok `<indexer>` agar Inventory Harvester bisa mengirim data ke OpenSearch.
+- `analysisd.syscollector_threads` harus ≥ 1 di `local_internal_options.conf`.
+
+**Solusi:** File-file berikut sudah dikonfigurasi dengan benar:
+- `config/wazuh_manager/ossec.conf` — blok `<indexer>` mengarah ke `https://wazuh-indexer:9200`.
+- `config/wazuh_manager/local_internal_options.conf` — berisi `analysisd.syscollector_threads=1`.
+- `wazuh-agent-shared.conf` / `wazuh-agent-multisite.conf` — menggunakan `<wodle name="syscollector">` (bukan `inventory` yang deprecated).
 
 ---
 

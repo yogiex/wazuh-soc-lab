@@ -49,6 +49,7 @@ services:
       - ./config/wazuh_indexer_ssl_certs/wazuh-manager.pem:/etc/ssl/filebeat.pem:ro
       - ./config/wazuh_indexer_ssl_certs/wazuh-manager-key.pem:/etc/ssl/filebeat.key:ro
       - ./config/wazuh_manager/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ./config/wazuh_manager/local_internal_options.conf:/wazuh-config-mount/etc/local_internal_options.conf:ro
       - ./config/wazuh_manager/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
       - ./config/wazuh_manager/local_decoder.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml:ro
     ports:
@@ -105,6 +106,7 @@ services:
       - ./config/wazuh_indexer_ssl_certs/dashboard-key.pem:/etc/wazuh-dashboard/certs/dashboard-key.pem:ro
       - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/etc/wazuh-dashboard/certs/root-ca.pem:ro
       - ./config/wazuh_dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+      - ./config/wazuh_dashboard/wazuh.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml:ro
     ports:
       - "5601:5601"
     networks:
