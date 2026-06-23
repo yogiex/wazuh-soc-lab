@@ -8,10 +8,27 @@ Simulasi pengumpulan log dari **Sangfor NGAF**, **Web Application Firewall (WAF)
 [![Docker](https://img.shields.io/badge/Docker-✓-2496ED?logo=docker)](https://docs.docker.com/compose/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## 🛠 Tech Stack
+
+| Teknologi | Versi | Fungsi |
+|-----------|-------|--------|
+| Wazuh Manager | 4.14.5 | SIEM/XDR engine — agent management, log analysis, alerting |
+| Wazuh Indexer | 4.14.5 | OpenSearch-based storage & indexing |
+| Wazuh Dashboard | 4.14.5 | Kibana-based UI — visualisasi & pencarian |
+| OpenSearch | 2.19.5 | Penyimpanan alert & event (managed by Wazuh Indexer) |
+| OpenSearch Dashboards | 2.19.5 | Core dashboard framework |
+| Apache httpd | 2.4 | Web server untuk shared hosting & multi-site containers |
+| WordPress | 6.x (latest via wp-cli) | CMS dummy di setiap domain shared hosting |
+| PHP | 8.x | Runtime WordPress |
+| Alpine Linux | 3.21 | Base image log injector |
+| Python | 3.x | Digunakan di entrypoint scripts |
+| Docker Compose | ≥ 2.x | Orkestrasi multi-container |
+
 ---
 
 ## 📋 Daftar Isi
 
+- [Tech Stack](#-tech-stack)
 - [Arsitektur](#-arsitektur)
 - [Struktur Folder](#-struktur-folder)
 - [Persyaratan](#-persyaratan)
