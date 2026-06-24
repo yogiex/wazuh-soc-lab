@@ -69,7 +69,11 @@ memiliki field tersebut.
 | `rule.groups` | string | Grup rule (attack, fim, recon) |
 | `data.vhost` | string | Domain (domain1.ac.id, labs.ac.id) |
 | `data.srcip` | string | IP sumber serangan |
-| `data.attack_type` | string | MITRE ATT&CK tipe serangan |
+| `rule.mitre.technique` | string[] | MITRE ATT&CK technique (dari rule) |
+| `rule.mitre.tactic` | string[] | MITRE ATT&CK tactic |
+| `rule.mitre.id` | string[] | MITRE ATT&CK ID |
+| `data.attack_type` | string | Tipe serangan (dari syslog/ingest pipeline) |
+| `data.actions` | string | Aksi (blocked/allowed/alerted) |
 | `syscheck.path` | string | Path file yang dimonitor FIM |
 | `syscheck.event` | string | Event FIM (added, modified, deleted) |
 | `@timestamp` | date | Waktu kejadian |

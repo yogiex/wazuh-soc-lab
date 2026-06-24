@@ -128,7 +128,7 @@ GET wazuh-alerts-*/_search
 }
 ```
 
-### Timeline per attack_type:
+### Timeline per MITRE technique:
 ```
 GET wazuh-alerts-*/_search
 {
@@ -139,7 +139,7 @@ GET wazuh-alerts-*/_search
       "date_histogram": {"field": "@timestamp", "interval": "day"},
       "aggs": {
         "by_attack": {
-          "terms": {"field": "data.attack_type", "size": 10}
+          "terms": {"field": "rule.mitre.technique", "size": 10}
         }
       }
     }
@@ -206,6 +206,7 @@ GET wazuh-alerts-*/_search
 
 Hitung jumlah dokumen yang memiliki field tertentu.
 
+**Hitung alert dengan data.attack_type (syslog/ingest):**
 ```
 GET wazuh-alerts-*/_search
 {
@@ -213,6 +214,19 @@ GET wazuh-alerts-*/_search
   "aggs": {
     "with_attack_type": {
       "value_count": {"field": "data.attack_type"}
+    }
+  }
+}
+```
+
+**Hitung alert dengan MITRE technique (dari rule tag):**
+```
+GET wazuh-alerts-*/_search
+{
+  "size": 0,
+  "aggs": {
+    "with_mitre": {
+      "value_count": {"field": "rule.mitre.technique"}
     }
   }
 }

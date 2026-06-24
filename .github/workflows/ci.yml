@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  shellcheck:
+    name: ShellCheck scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
+          additional_files: |
+            entrypoint.sh
+            entrypoint-wordpress.sh
+            register-agent.sh
+            setup.sh
+
+  hadolint:
+    name: Hadolint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: Dockerfile.injector
+      - uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: Dockerfile.shared
+      - uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: Dockerfile.multi-site
+
+  yamllint:
+    name: YAML lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint.yml
+          file_or_dir: |
+            docker-compose.yml
+            config/wazuh_dashboard/opensearch_dashboards.yml
+            config/wazuh_dashboard/wazuh.yml
+            config/wazuh_indexer/opensearch.yml
+
+  json-validate:
+    name: JSON validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: jq empty config/wazuh_indexer/ingest-attack-type.json
+
+  xml-lint:
+    name: XML lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
+      - run: xmllint --noout config/wazuh_manager/local_rules.xml
+      - run: xmllint --noout config/wazuh_manager/local_decoder.xml
+      - run: xmllint --noout config/wazuh_manager/ossec.conf
+      - run: xmllint --noout config/wazuh_manager/shared/wordpress-hosting/agent.conf
+
+  markdown-lint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          config: .markdownlint.json
+          globs: |
+            *.md
+            learning/**/*.md
+            docs/*.md

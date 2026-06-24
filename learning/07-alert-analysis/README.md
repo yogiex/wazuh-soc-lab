@@ -83,36 +83,74 @@ GET wazuh-alerts-*/_search
 }
 ```
 
-## 5. Query data.attack_type (MITRE ATT&CK)
+## 5. Query MITRE ATT&CK (rule.mitre & data.attack_type)
 
-Field `data.attack_type` diisi jika rule memiliki mapping MITRE ATT&CK.
+Ada **2 cara** untuk query MITRE ATT&CK di Wazuh:
 
-> **Catatan:** Rules custom 100002-100024 di lab ini belum punya tag `<mitre>`.
-> Field ini akan muncul jika Anda menambahkan mapping MITRE ke `local_rules.xml`.
+### 5a. rule.mitre.* — dari rule tags (semua source)
 
-### Cari alert yang punya attack_type:
+MITRE ATT&CK mapping dari tag `<mitre>` di rules (built-in + custom).
+Disimpan sebagai **array** di `rule.mitre.technique`, `rule.mitre.tactic`, `rule.mitre.id`.
+
+**KQL — cari alert dengan MITRE mapping:**
 ```
-exists:data.attack_type
+exists:rule.mitre.technique
 ```
 
-`data.attack_type : (*)` (KQL) atau `_exists_:data.attack_type` (Lucene)
-
-### Cari berdasarkan tipe serangan tertentu:
+**KQL — cari MITRE technique spesifik:**
 ```
-data.attack_type : "WebShell"
+rule.mitre.technique : "Web Shell"
+rule.mitre.technique : "Exploit Public-Facing Application"
+rule.mitre.technique : "Password Guessing"
+```
+
+**KQL — kombinasi tactic + domain:**
+```
+rule.mitre.tactic : "Persistence" AND data.vhost : "domain1.ac.id"
+```
+
+**Dev Tools — MITRE ID:**
+```
+GET wazuh-alerts-*/_search
+{
+  "query": {"term": {"rule.mitre.id": "T1505.003"}}
+}
+```
+
+**Dev Tools — Aggregation unique technique:**
+```
+GET wazuh-alerts-*/_search
+{
+  "size": 0,
+  "aggs": {
+    "mitre_techniques": {
+      "terms": {"field": "rule.mitre.technique", "size": 50}
+    }
+  }
+}
+```
+
+### 5b. data.attack_type — dari syslog injector + ingest pipeline
+
+Field `data.attack_type` muncul dari 2 sumber:
+1. **Syslog (Sangfor / WAF):** injector langsung menulis `attack_type="SQL Injection"` → di-parse decoder
+2. **Ingest pipeline:** OpenSearch otomatis copy `rule.mitre.technique[0]` → `data.attack_type` saat indexing
+
+**KQL — cari attack_type langsung:**
+```
+data.attack_type : (*)
 data.attack_type : "SQL Injection"
-data.attack_type : "Credential Access"
-data.attack_type : "Persistence"
-data.attack_type : "Execution"
-data.attack_type : "Discovery"
+data.attack_type : "WebShell Upload"
+data.attack_type : "Cross-Site Scripting"
 ```
 
-### Kombinasi dengan domain:
+**Kombinasi dengan filter lain:**
 ```
-data.attack_type : "WebShell" AND data.vhost : "domain1.ac.id"
+data.attack_type : "SQL Injection" AND data.srcip : "10.0.0.50"
+data.attack_type : "WebShell Upload" AND data.actions : "blocked"
 ```
 
-### Dev Tools — Aggregation untuk lihat semua unique attack_type:
+**Dev Tools — unique attack_type:**
 ```
 GET wazuh-alerts-*/_search
 {
@@ -124,6 +162,16 @@ GET wazuh-alerts-*/_search
   }
 }
 ```
+
+### 5c. Perbandingan rule.mitre vs data.attack_type
+
+| Aspek | `rule.mitre.technique` | `data.attack_type` |
+|---|---|---|
+| Sumber | Tag `<mitre>` di rules | Syslog injector + ingest pipeline |
+| Tipe data | Array (bisa multi-value) | String (single value) |
+| Cakupan | Semua alert (Apache, FIM, syslog) | Syslog Sangfor/WAF + pipeline-copy |
+| Query | `rule.mitre.technique : "Web Shell"` | `data.attack_type : "Web Shell"` |
+| Availability | Semua rule dengan MITRE tag | Perlu injector atau pipeline |
 
 ## 6. Query WAF + Domain Timeline
 

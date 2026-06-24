@@ -1,11 +1,11 @@
 <decoder name="sangfor-ngaf">
   <prematch>SangforNGAF</prematch>
-  <regex>devid=(\S+) src=(\S+) dst=(\S+) ngaf_action=(\S+) policy="([^"]+)" type=(\S+) severity=(\S+)</regex>
-  <order>devid, srcip, dstip, ngaf_action, policy, type, severity</order>
+  <regex>devid=(\S+) src=(\S+) dst=(\S+) actions=(\S+) attack_type="([^"]+)" policy="([^"]+)" type=(\S+) severity=(\S+)</regex>
+  <order>devid, srcip, dstip, actions, attack_type, policy, type, severity</order>
 </decoder>
 
 <decoder name="waf">
   <prematch>^WAF-\S+ src=</prematch>
-  <regex>^WAF-\S+ src=(\S+) dst=(\S+) rule=(\S+) method=(\S+) uri=(\S+) waf_status=(\d+)</regex>
-  <order>srcip, dstip, rule, method, uri, waf_status</order>
+  <regex>^WAF-\S+ src=(\S+) dst=(\S+) actions=(\S+) attack_type="([^"]+)" rule=(\S+) method=(\S+) uri=(\S+) waf_status=(\d+)</regex>
+  <order>srcip, dstip, actions, attack_type, rule, method, uri, waf_status</order>
 </decoder>

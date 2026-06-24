@@ -202,7 +202,7 @@ Cek apakah field memiliki nilai:
 GET wazuh-alerts-*/_search
 {
   "query": {
-    "exists": {"field": "data.attack_type"}
+    "exists": {"field": "rule.mitre.technique"}
   }
 }
 ```
@@ -219,18 +219,35 @@ GET wazuh-alerts-*/_search?size=1
 3. Hasil akan menampilkan 1 dokumen lengkap dengan semua field `_source`
 4. Perhatikan struktur:
    - `_source.rule` — detail rule (id, level, description, groups, mitre)
-   - `_source.data` — data spesifik (vhost, srcip, dstip, attack_type)
+   - `_source.rule.mitre` — MITRE ATT&CK (id, tactic, technique — array)
+   - `_source.data` — data spesifik (vhost, srcip, dstip, actions, attack_type, rule, method, uri)
    - `_source.agent` — informasi agent (id, name, version, os)
    - `_source.manager` — informasi manager
 
-**Contoh: Ambil semua unique attack_type:**
+**MITRE ATT&CK query (via rule.mitre):**
+```
+GET wazuh-alerts-*/_search
+{
+  "query": {"term": {"rule.mitre.technique": "Web Shell"}}
+}
+```
+
+**Attack type dari syslog (langsung di data.attack_type):**
+```
+GET wazuh-alerts-*/_search
+{
+  "query": {"term": {"data.attack_type": "SQL Injection"}}
+}
+```
+
+**Contoh: Ambil semua unique MITRE technique:**
 ```
 GET wazuh-alerts-*/_search
 {
   "size": 0,
   "aggs": {
-    "attack_types": {
-      "terms": {"field": "data.attack_type", "size": 50}
+    "mitre_techniques": {
+      "terms": {"field": "rule.mitre.technique", "size": 50}
     }
   }
 }

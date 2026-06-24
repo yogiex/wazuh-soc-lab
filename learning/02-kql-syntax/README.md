@@ -119,6 +119,7 @@ Coba query berikut di Discover dan observasi hasilnya:
 
 1. `rule.level : 12` — alert paling kritis
 2. `rule.groups : "fim"` — semua FIM event
-3. `data.attack_type : (*)` — alert yang punya MITRE ATT&CK type
-4. `@timestamp >= "now-1h"` — alert dalam 1 jam terakhir
-5. `agent.name : "shared-hosting" AND syscheck.event : "modified"` — file modification
+5. `exists:rule.mitre.technique` — alert yang punya MITRE ATT&CK mapping
+6. `data.attack_type : (*)` — alert dengan attack_type (dari syslog/ingest)
+7. `@timestamp >= "now-1h"` — alert dalam 1 jam terakhir
+8. `agent.name : "shared-hosting" AND syscheck.event : "modified"` — file modification
