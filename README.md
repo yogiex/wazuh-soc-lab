@@ -335,6 +335,9 @@ NORMAL_INJECT="yes"       # Inject traffic normal juga
 | `sangfor-logs` | Syslog UDP | Sangfor NGAF security log |
 | `waf-logs` | Syslog UDP | WAF block log |
 | `fim-webshell` | File create | Webshell FIM detection |
+| `google-site-verification` | File create + Apache access | Googlebot verification + crawl simulation |
+| `web-scan` | Apache access | Automated scanner (WPScan, Nikto, WhatWeb, Gobuster, Nuclei) |
+| `info-disclosure` | Apache access | Backup file, config disclosure, DB dump, PHP info probes |
 
 ---
 
