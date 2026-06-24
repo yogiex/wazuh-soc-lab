@@ -76,4 +76,51 @@
     <group>recon,</group>
   </rule>
 
+  <!-- ============================================ -->
+  <!-- FIM Custom Rules (Webshell & File Tamper)    -->
+  <!-- ============================================ -->
+
+  <!-- 100020: New .php file in webroot (webshell indicator) -->
+  <rule id="100020" level="12">
+    <if_sid>550</if_sid>
+    <field name="syscheck.path" type="pattern">\.php$</field>
+    <field name="syscheck.path" type="pattern">^/home/domain</field>
+    <description>FIM: Possible webshell — new .php file created: $(syscheck.path)</description>
+    <group>fim,webshell,high,</group>
+  </rule>
+
+  <!-- 100021: wp-config.php modified -->
+  <rule id="100021" level="10">
+    <if_sid>553</if_sid>
+    <field name="syscheck.path" type="pattern">wp-config\.php$</field>
+    <description>FIM: WordPress config tampered — $(syscheck.path)</description>
+    <group>fim,wordpress,tamper,</group>
+  </rule>
+
+  <!-- 100022: .htaccess modified -->
+  <rule id="100022" level="10">
+    <if_sid>553</if_sid>
+    <field name="syscheck.path" type="pattern">\.htaccess$</field>
+    <field name="syscheck.path" type="pattern">^/home/domain</field>
+    <description>FIM: .htaccess file modified — $(syscheck.path)</description>
+    <group>fim,htaccess,tamper,</group>
+  </rule>
+
+  <!-- 100023: Existing .php file modified in webroot -->
+  <rule id="100023" level="7">
+    <if_sid>553</if_sid>
+    <field name="syscheck.path" type="pattern">\.php$</field>
+    <field name="syscheck.path" type="pattern">^/home/domain</field>
+    <description>FIM: PHP file modified — $(syscheck.path)</description>
+    <group>fim,php,</group>
+  </rule>
+
+  <!-- 100024: File deleted from webroot -->
+  <rule id="100024" level="5">
+    <if_sid>554</if_sid>
+    <field name="syscheck.path" type="pattern">^/home/domain</field>
+    <description>FIM: File deleted from webroot — $(syscheck.path)</description>
+    <group>fim,deletion,</group>
+  </rule>
+
 </group>

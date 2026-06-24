@@ -52,6 +52,7 @@ services:
       - ./config/wazuh_manager/local_internal_options.conf:/wazuh-config-mount/etc/local_internal_options.conf:ro
       - ./config/wazuh_manager/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
       - ./config/wazuh_manager/local_decoder.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml:ro
+      - ./config/wazuh_manager/shared/wordpress-hosting/agent.conf:/var/ossec/etc/shared/wordpress-hosting/agent.conf:ro
     ports:
       - "1514:1514/udp"
       - "1515:1515"

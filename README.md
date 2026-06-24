@@ -97,9 +97,12 @@ graph TB
 │   ├── wazuh_indexer_ssl_certs/       # Sertifikat SSL (hasil generate)
 │   ├── wazuh_manager/
 │   │   ├── local_decoder.xml               # Custom decoder Sangfor/WAF
-│   │   ├── local_rules.xml                 # Custom rule alerts
+│   │   ├── local_rules.xml                 # Custom rule alerts (incl. FIM rules 100020-100024)
 │   │   ├── local_internal_options.conf      # analysisd.syscollector_threads=1
-│   │   └── ossec.conf                      # Konfigurasi Manager (syslog receiver + indexer)
+│   │   ├── ossec.conf                      # Konfigurasi Manager (syslog receiver + indexer)
+│   │   └── shared/
+│   │       └── wordpress-hosting/
+│   │           └── agent.conf              # Group config: FIM syscheck (brace expansion)
 │   └── wazuh_dashboard/                    # Konfigurasi OpenSearch Dashboards
 │       ├── opensearch_dashboards.yml
 │       └── wazuh.yml                       # API connection (run_as: false)
@@ -380,6 +383,38 @@ Contoh decoder Sangfor NGAF & WAF sudah tersedia di `local_decoder.xml`, bisa la
    docker-compose restart wazuh-dashboard
    ```
 4. Clear browser cookies untuk domain `localhost:5601`, reload halaman.
+
+### FIM rules tidak trigger (webshell / file tamper)
+
+**Penyebab:** FIM syscheck dikonfigurasi via **group** (`wordpress-hosting`), bukan di agent local config.
+
+**Solusi:**
+
+1. Assign agent `shared-hosting` ke group `wordpress-hosting`:
+   ```bash
+   TOKEN=$(curl -sk -u wazuh:MyS3cur3P@ss! -X POST \
+     "https://localhost:55000/security/user/authenticate" | \
+     python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])")
+
+   curl -sk -X PUT "https://localhost:55000/agents/002/group/wordpress-hosting" \
+     -H "Authorization: Bearer $TOKEN"
+   ```
+2. Agent akan pull group config dalam beberapa menit, atau restart agent:
+   ```bash
+   docker-compose restart shared-hosting
+   ```
+3. Verifikasi agent tergabung di grup:
+   ```bash
+   curl -sk "https://localhost:55000/agents/002?pretty=true" \
+     -H "Authorization: Bearer $TOKEN" | grep group
+   ```
+
+Log FIM akan muncul dengan rule ID:
+- **100020** (level 12) — New .php file (webshell)
+- **100021** (level 10) — wp-config.php modified
+- **100022** (level 10) — .htaccess modified
+- **100023** (level 7) — PHP file modified
+- **100024** (level 5) — File deleted
 
 ### Syscollector / Inventory data tidak muncul di Dashboard
 
