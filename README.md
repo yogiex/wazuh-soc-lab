@@ -196,14 +196,20 @@ Tunggu beberapa menit hingga semua container **healthy** (`docker-compose ps`).
   > pastikan `run_as: false` di `config/wazuh_dashboard/wazuh.yml`, lalu clear browser cookies
   > dan reload halaman. Lihat [Troubleshooting](#-troubleshooting).
 
-- **Shared Hosting** (5 domain terpisah):
-  Akses via `curl` dengan header `Host`:
-
+- **Shared Hosting** (5 domain WordPress):
+  Tambahkan domain ke `/etc/hosts`:
   ```bash
-  curl -H "Host: domain1.ac.id" http://localhost:7070
-  curl -H "Host: domain2.ac.id" http://localhost:7070
-  # … s.d. domain5.ac.id
+  echo '127.0.0.1 domain1.ac.id domain2.ac.id domain3.ac.id domain4.ac.id domain5.ac.id' | sudo tee -a /etc/hosts
   ```
+  Buka di browser: `http://domain1.ac.id:7070` (s.d. domain5)
+  > Akses via `curl`:
+  > ```bash
+  > curl -H "Host: domain1.ac.id" http://localhost:7070
+  > ```
+  >
+  > **WordPress admin:** `http://domain1.ac.id:7070/wp-admin`
+  > User: `admin` / Pass: `mBatzc2*WyqVAx%@FA`
+  > > ⚠️ Injector akan overwrite `wp-config.php` sebagai simulasi webshell — FIM rule 100021 akan trigger.
 
 - **Multi‑site Lab** (labs.ac.id & subdomain):
   ```bash
@@ -383,6 +389,23 @@ Contoh decoder Sangfor NGAF & WAF sudah tersedia di `local_decoder.xml`, bisa la
    docker-compose restart wazuh-dashboard
    ```
 4. Clear browser cookies untuk domain `localhost:5601`, reload halaman.
+
+### Website WordPress mengembalikan 403 Forbidden
+
+**Penyebab:** Apache default config memiliki `<Directory />` dengan `Require all denied`, sementara DocumentRoot mengarah ke `/home/domain*.ac.id/public_html` tanpa `<Directory>` block yang mengizinkan akses.
+
+**Solusi:** Blok `<Directory /home/>` sudah ditambahkan di `shared-hosting.conf`:
+```apache
+<Directory /home/>
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+```
+Setelah edit, rebuild container:
+```bash
+docker-compose up -d --build shared-hosting
+```
 
 ### FIM rules tidak trigger (webshell / file tamper)
 
