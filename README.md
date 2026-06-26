@@ -196,6 +196,9 @@ Tunggu beberapa menit hingga semua container **healthy** (`docker-compose ps`).
   > pastikan `run_as: false` di `config/wazuh_dashboard/wazuh.yml`, lalu clear browser cookies
   > dan reload halaman. Lihat [Troubleshooting](#-troubleshooting).
 
+![Wazuh Dashboard — Agents overview](docs/screenshots/wazuh-agents.png)
+*Dua agent terdaftar: `shared-hosting` (ID 001) dan `multi-site` (ID 002), keduanya aktif mengirim data.*
+
 - **Shared Hosting** (5 domain WordPress):
   Tambahkan domain ke `/etc/hosts`:
   ```bash
@@ -210,6 +213,17 @@ Tunggu beberapa menit hingga semua container **healthy** (`docker-compose ps`).
   > **WordPress admin:** `http://domain1.ac.id:7070/wp-admin`
   > User: `admin` / Pass: `mBatzc2*WyqVAx%@FA`
   > > ⚠️ Injector akan overwrite `wp-config.php` sebagai simulasi webshell — FIM rule 100021 akan trigger.
+
+> #### 🕵️ SEO Cloaking — Akademi Ninja Konoha
+> 
+> Domain `domain1.ac.id` menjalankan **SEO Cloaking** dengan tema **Akademi Ninja Konoha**:
+> - **Normal visitor** → landing page legit "Akademi Ninja Konoha — Portal Ninja"
+> - **Googlebot** (atau `?cloak=1`) → redirect ke halaman deface seo cloaking
+> - Custom Wazuh rules (ID 100020–100034) mendeteksi perubahan FIM + SCA terkait cloaking
+>
+> | Normal (`http://domain1.ac.id:7070/`) | Cloaked (`http://domain1.ac.id:7070/?cloak=1`) |
+> |---|---|
+> | ![Akademi Ninja Normal](docs/screenshots/akademi-ninja-normal.png) | ![Akademi Ninja Cloaked](docs/screenshots/akademi-ninja-cloaked.png) |
 
 - **Multi‑site Lab** (labs.ac.id & subdomain):
   ```bash
@@ -373,6 +387,9 @@ Log ini akan muncul di Dashboard setelah beberapa detik.
 4. Buat visualisasi: grafik serangan per domain, top attacker IP, traffic per subdomain, dll.
 
 Contoh decoder Sangfor NGAF & WAF sudah tersedia di `local_decoder.xml`, bisa langsung digunakan.
+
+![Wazuh Dashboard — Discover: SEO alerts](docs/screenshots/wazuh-discover-seo.png)
+*Discover page menampilkan alert FIM file deletion (rule 100022) dan SCA alerts terkait SEO Cloaking.*
 
 ## 🔧 Troubleshooting
 
