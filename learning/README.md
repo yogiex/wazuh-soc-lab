@@ -31,6 +31,8 @@ mulai dari basic discovery hingga advanced visualizations.
 | 08 | `fim-integrity-monitoring` | syscheck.path, event, hash queries |
 | 09 | `aggregations-statistics` | Terms agg, cardinality, date histogram, top N |
 | 10 | `visualizations-dashboards` | Saved search → Visualize → Dashboard |
+| 11 | `parasite-seo-detection` | Deteksi SEO Cloaking / Parasite SEO |
+| 12 | `wordpress-sca` | WordPress Security Assessment dengan SCA (11+ checks) |
 
 ## Referensi
 

@@ -1,0 +1,102 @@
+policy:
+  id: "wordpress_hardening"
+  file: "wordpress_hardening.yml"
+  name: "WordPress Shared Hosting Hardening"
+  description: "SCA policy untuk WordPress di environment shared hosting — deteksi misconfigurations yang menyebabkan SEO Cloaking"
+  references:
+    - https://wordpress.org/support/article/hardening-wordpress/
+    - https://wazuh.com/blog/how-to-perform-wordpress-security-assessment-with-wazuh/
+
+requirements:
+  title: "Check WordPress installation"
+  description: "Endpoint harus memiliki WordPress terinstall"
+  condition: all
+  rules:
+    - 'f:/home/domain1.ac.id/public_html/wp-config.php'
+
+variables:
+  $wp_dirs: /home/domain1.ac.id/public_html
+
+checks:
+  - id: 100000
+    title: "WordPress hardening: .htaccess file permissions set to 644"
+    description: "File permission .htaccess harus 644"
+    rationale: "Permission terlalu longgar expose konfigurasi rewrite"
+    remediation: "chmod 644 $wp_dirs/.htaccess"
+    condition: all
+    rules:
+      - c:stat -c '%a' $wp_dirs/.htaccess -> r:644
+
+  - id: 100001
+    title: "WordPress hardening: Directory browsing is disabled"
+    description: "Directory listing harus disabled untuk direktori WordPress"
+    rationale: "Directory listing mengekspos struktur file"
+    remediation: "Tambah 'Options All -Indexes' di .htaccess"
+    condition: all
+    rules:
+      - c:cat $wp_dirs/.htaccess -> r:Options\\sAll\\s\-Indexes
+
+  - id: 100002
+    title: "WordPress hardening: Core folder permissions set to 755"
+    description: "Folder wp-admin, wp-includes, wp-content harus 755"
+    rationale: "Folder dengan permission salah memungkinkan unauthorized write"
+    remediation: "find $wp_dirs -type d -exec chmod 755 {} \\;"
+    condition: all
+    rules:
+      - c:stat -c '%a' $wp_dirs/wp-admin -> r:755
+      - c:stat -c '%a' $wp_dirs/wp-includes -> r:755
+      - c:stat -c '%a' $wp_dirs/wp-content -> r:755
+
+  - id: 100003
+    title: "WordPress hardening: index.php is original (no cloaking)"
+    description: "index.php tidak boleh mengandung cloaking redirect code"
+    rationale: "SEO Cloaking memodifikasi index.php untuk serve konten judi ke Googlebot"
+    remediation: "Restore index.php dari WordPress official"
+    condition: none
+    rules:
+      - c:grep -cE 'googlebot|security\.php|baidu|facebookexternalhit|cloak' $wp_dirs/index.php -> r:^0$
+
+  - id: 100004
+    title: "WordPress hardening: wp-config.php has no backdoor eval"
+    description: "wp-config.php tidak boleh mengandung eval atau base64_decode"
+    rationale: "Penyerang sering menyisipkan backdoor eval di wp-config.php"
+    remediation: "Revert wp-config.php ke versi original, rotasi semua kredensial"
+    condition: none
+    rules:
+      - c:grep -cE 'eval\(|base64_decode|preg_replace.*e|system\(|exec\(' $wp_dirs/wp-config.php -> r:^0$
+
+  - id: 100005
+    title: "WordPress hardening: No security.php file present"
+    description: "File security.php tidak boleh ada di webroot"
+    rationale: "security.php adalah file konten judi dalam serangan SEO Cloaking"
+    remediation: "rm -f $wp_dirs/security.php"
+    condition: none
+    rules:
+      - c:test -f $wp_dirs/security.php && echo 1 || echo 0 -> r:^0$
+
+  - id: 100006
+    title: "WordPress hardening: wp-config.php file permissions"
+    description: "wp-config.php harus 600 atau 640"
+    rationale: "World-readable wp-config.php mengekspos DB credentials"
+    remediation: "chmod 600 $wp_dirs/wp-config.php"
+    condition: all
+    rules:
+      - c:stat -c '%a' $wp_dirs/wp-config.php -> r:600|640
+
+  - id: 100007
+    title: "WordPress hardening: No backup files in webroot"
+    description: "Tidak boleh ada file .bak .zip .sql .old di root WordPress"
+    rationale: "Backup file bisa dibaca attacker — bocor DB credentials"
+    remediation: "Hapus file backup, simpan di luar document root"
+    condition: none
+    rules:
+      - c:sh -c "cd $wp_dirs; ls -la" -> r:\.(zip|back|backup|bak|old|previous|sql)$
+
+  - id: 100008
+    title: "WordPress hardening: No suspicious index file variants"
+    description: "Tidak boleh ada indexx.php atau varian index lain"
+    rationale: "Penyerang membuat indexx.php sebagai backup index.php original"
+    remediation: "Hapus file varian index yang mencurigakan"
+    condition: none
+    rules:
+      - c:sh -c "cd $wp_dirs; ls index*.php 2>/dev/null" -> r:^index\.php$
