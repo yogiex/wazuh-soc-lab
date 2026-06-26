@@ -1,4 +1,4 @@
-<group name="sangfor,ngaf,waf,firewall,">
+<group name="sangfor,ngaf,waf,firewall,seo_cloaking,">
 
   <!-- ============================================ -->
   <!-- Sangfor NGAF Rules                           -->
@@ -11,8 +11,6 @@
     <group>attack,blocked,</group>
     <mitre>
       <id>T1562.004</id>
-      <tactic>Defense Evasion</tactic>
-      <technique>Impair Defenses</technique>
     </mitre>
   </rule>
 
@@ -23,8 +21,6 @@
     <group>attack,high_severity,</group>
     <mitre>
       <id>T1204</id>
-      <tactic>Execution</tactic>
-      <technique>User Execution</technique>
     </mitre>
   </rule>
 
@@ -35,8 +31,6 @@
     <group>attack,medium_severity,</group>
     <mitre>
       <id>T1078</id>
-      <tactic>Defense Evasion</tactic>
-      <technique>Valid Accounts</technique>
     </mitre>
   </rule>
 
@@ -57,8 +51,6 @@
     <group>attack,sqli,</group>
     <mitre>
       <id>T1190</id>
-      <tactic>Initial Access</tactic>
-      <technique>Exploit Public-Facing Application</technique>
     </mitre>
   </rule>
 
@@ -69,8 +61,6 @@
     <group>attack,xss,</group>
     <mitre>
       <id>T1189</id>
-      <tactic>Initial Access</tactic>
-      <technique>Drive-by Compromise</technique>
     </mitre>
   </rule>
 
@@ -81,8 +71,6 @@
     <group>attack,blocked,</group>
     <mitre>
       <id>T1562.004</id>
-      <tactic>Defense Evasion</tactic>
-      <technique>Impair Defenses</technique>
     </mitre>
   </rule>
 
@@ -93,8 +81,6 @@
     <group>attack,lfi,</group>
     <mitre>
       <id>T1006</id>
-      <tactic>Defense Evasion</tactic>
-      <technique>Direct Volume Access</technique>
     </mitre>
   </rule>
 
@@ -105,8 +91,6 @@
     <group>attack,rce,</group>
     <mitre>
       <id>T1203</id>
-      <tactic>Execution</tactic>
-      <technique>Exploitation for Client Execution</technique>
     </mitre>
   </rule>
 
@@ -116,111 +100,75 @@
     <group>recon,</group>
     <mitre>
       <id>T1595</id>
-      <tactic>Reconnaissance</tactic>
-      <technique>Active Scanning</technique>
     </mitre>
   </rule>
 
   <!-- ============================================ -->
-  <!-- FIM Custom Rules (Webshell & File Tamper)    -->
+  <!-- FIM Custom Rules                             -->
   <!-- ============================================ -->
+  <!--
+    NOTE: Wazuh 4.14.5 limitation — <match>, <regex>, <field> do NOT work
+    in child rules of syscheck events. Only <if_sid> conditions are evaluated.
+    See research notes in AGENTS.md for details.
+  -->
 
-  <!-- 100020: New .php file in webroot (webshell indicator) -->
-  <rule id="100020" level="12">
+  <rule id="100020" level="7">
     <if_sid>550</if_sid>
-    <field name="syscheck.path" type="pattern">\.php$</field>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: Possible webshell — new .php file created: $(syscheck.path)</description>
-    <group>fim,webshell,high,</group>
-    <mitre>
-      <id>T1505.003</id>
-      <tactic>Persistence</tactic>
-      <technique>Server Software Component: Web Shell</technique>
-    </mitre>
-  </rule>
-
-  <rule id="100021" level="10">
-    <if_sid>553</if_sid>
-    <field name="syscheck.path" type="pattern">wp-config\.php$</field>
-    <description>FIM: WordPress config tampered — $(syscheck.path)</description>
-    <group>fim,wordpress,tamper,</group>
+    <description>FIM: File modified in webroot</description>
+    <group>fim,syscheck,</group>
     <mitre>
       <id>T1565.001</id>
-      <tactic>Impact</tactic>
-      <technique>Data Manipulation</technique>
     </mitre>
   </rule>
 
-  <rule id="100022" level="10">
-    <if_sid>553</if_sid>
-    <field name="syscheck.path" type="pattern">\.htaccess$</field>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: .htaccess file modified — $(syscheck.path)</description>
-    <group>fim,htaccess,tamper,</group>
-    <mitre>
-      <id>T1565.001</id>
-      <tactic>Impact</tactic>
-      <technique>Data Manipulation</technique>
-    </mitre>
-  </rule>
-
-  <rule id="100023" level="7">
-    <if_sid>553</if_sid>
-    <field name="syscheck.path" type="pattern">\.php$</field>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: PHP file modified — $(syscheck.path)</description>
-    <group>fim,php,</group>
-    <mitre>
-      <id>T1505.003</id>
-      <tactic>Persistence</tactic>
-      <technique>Server Software Component: Web Shell</technique>
-    </mitre>
-  </rule>
-
-  <rule id="100024" level="5">
+  <rule id="100021" level="5">
     <if_sid>554</if_sid>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: File deleted from webroot — $(syscheck.path)</description>
-    <group>fim,deletion,</group>
+    <description>FIM: New file created in webroot</description>
+    <group>fim,syscheck,</group>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100022" level="7">
+    <if_sid>553</if_sid>
+    <description>FIM: File deleted from webroot</description>
+    <group>fim,syscheck,</group>
     <mitre>
       <id>T1485</id>
-      <tactic>Impact</tactic>
-      <technique>Data Destruction</technique>
     </mitre>
   </rule>
 
-  <!-- 100021: wp-config.php modified -->
-  <rule id="100021" level="10">
-    <if_sid>553</if_sid>
-    <field name="syscheck.path" type="pattern">wp-config\.php$</field>
-    <description>FIM: WordPress config tampered — $(syscheck.path)</description>
-    <group>fim,wordpress,tamper,</group>
+  <!-- ============================================ -->
+  <!-- SEO Cloaking Detection Rules                 -->
+  <!-- ============================================ -->
+  <!-- Intermediate rule (level 0 = no alert) to aggregate FIM events for
+       statistical detection. Required because if_matched_sid in Wazuh 4.14.5
+       does NOT accept comma-separated rule IDs. -->
+  <rule id="100025" level="0">
+    <if_sid>550,554</if_sid>
+    <description>SEO Cloaking FIM base event (internal)</description>
+    <group>seo_cloaking,</group>
   </rule>
 
-  <!-- 100022: .htaccess modified -->
-  <rule id="100022" level="10">
-    <if_sid>553</if_sid>
-    <field name="syscheck.path" type="pattern">\.htaccess$</field>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: .htaccess file modified — $(syscheck.path)</description>
-    <group>fim,htaccess,tamper,</group>
+  <rule id="100030" level="12" frequency="4" timeframe="120">
+    <if_matched_sid>100025</if_matched_sid>
+    <description>SEO Cloaking: Multiple file changes in webroot — possible SEO cloaking campaign</description>
+    <group>fim,seo_cloaking,critical,</group>
+    <mitre>
+      <id>T1565.001</id>
+    </mitre>
   </rule>
 
-  <!-- 100023: Existing .php file modified in webroot -->
-  <rule id="100023" level="7">
-    <if_sid>553</if_sid>
-    <field name="syscheck.path" type="pattern">\.php$</field>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: PHP file modified — $(syscheck.path)</description>
-    <group>fim,php,</group>
-  </rule>
-
-  <!-- 100024: File deleted from webroot -->
-  <rule id="100024" level="5">
-    <if_sid>554</if_sid>
-    <field name="syscheck.path" type="pattern">^/home/domain</field>
-    <description>FIM: File deleted from webroot — $(syscheck.path)</description>
-    <group>fim,deletion,</group>
+  <rule id="100034" level="7">
+    <if_sid>31100</if_sid>
+    <field name="full_log" type="pcre2">[Gg]ooglebot|[Bb]ingbot|[Yy]andex</field>
+    <field name="data.url" type="pcre2">security|cloak|data-alumni</field>
+    <description>SEO Cloaking: Googlebot accessing suspicious cloaking path</description>
+    <group>seo_cloaking,recon,</group>
+    <mitre>
+      <id>T1595</id>
+    </mitre>
   </rule>
 
 </group>

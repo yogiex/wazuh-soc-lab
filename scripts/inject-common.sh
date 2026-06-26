@@ -27,7 +27,7 @@ auth_ts() {
 }
 
 syslog_ts() {
-    date '+%Y-%m-%dT%H:%M:%SZ'
+    date '+%b %d %H:%M:%S'
 }
 
 random_ip() {
@@ -73,7 +73,7 @@ inject_auth() {
 inject_syslog() {
     local priority="$1" app="$2" message="$3"
     local ts=$(syslog_ts)
-    echo "<${priority}>${ts} ${app} ${message}" \
+    echo "<${priority}>${ts} wazuh-injector ${app} ${message}" \
         | nc -u -w0 "$SYSLOG_TARGET" "$SYSLOG_PORT" 2>/dev/null
 }
 

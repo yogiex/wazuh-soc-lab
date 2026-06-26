@@ -3,14 +3,7 @@
   "processors": [
     {
       "script": {
-        "source": """
-          if (ctx.containsKey('rule') && ctx.rule.containsKey('mitre') &&
-              ctx.rule.mitre.containsKey('technique') &&
-              !ctx.rule.mitre.technique.isEmpty()) {
-            if (!ctx.containsKey('data')) ctx.data = [:];
-            ctx.data.attack_type = ctx.rule.mitre.technique[0];
-          }
-        """
+        "source": "if (ctx.containsKey('rule') && ctx.rule.containsKey('mitre') && ctx.rule.mitre.containsKey('technique') && !ctx.rule.mitre.technique.isEmpty()) { if (!ctx.containsKey('data')) ctx.data = [:]; ctx.data.attack_type = ctx.rule.mitre.technique[0]; }"
       }
     }
   ]
